@@ -1,0 +1,22 @@
+/*
+ * This is the main CSS entry point for the application.
+ * It uses Tailwind CSS directives to build the final stylesheet.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+  h1 {
+    @apply text-3xl font-bold text-primary;
+  }
+  */
+
+  /* Example: Apply a smooth font-smoothing for a more premium look on supported browsers */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

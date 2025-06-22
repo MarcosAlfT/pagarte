@@ -1,0 +1,121 @@
+{
+  "id": "payments",
+  "name": "Payments",
+  "levelName": "FlowRoot",
+  "children": [
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "icon": "FaBolt",
+      "levelName": "Category",
+      "children": [
+        {
+          "id": "electricity",
+          "name": "Electricity",
+          "icon": "FaPlug",
+          "levelName": "Company",
+          "children": [
+            { "id": "c1", "name": "Elect 1", "icon": "FaBuilding", "isLeaf": true },
+            { "id": "c2", "name": "Electricity 2", "icon": "FaBuilding", "isLeaf": true }
+          ]
+        },
+        {
+          "id": "heating",
+          "name": "Heating",
+          "icon": "FaFire",
+          "levelName": "Company",
+          "children": [
+            { "id": "c1", "name": "Heat 1", "icon": "FaBuilding", "isLeaf": true },
+            { "id": "c2", "name": "Heat 2", "icon": "FaBuilding", "isLeaf": true }
+          ]
+        },
+        {
+          "id": "phone",
+          "name": "Phone",
+          "icon": "FaPhone",
+          "levelName": "Company",
+          "children": [
+            { "id": "c1", "name": "Phone 1", "icon": "FaBuilding", "isLeaf": true },
+            { "id": "c2", "name": "Phone 2", "icon": "FaBuilding", "isLeaf": true }
+          ]
+        },
+        {
+          "id": "water",
+          "name": "Water",
+          "icon": "FaTint",
+          "levelName": "Company",
+          "children": [
+            { "id": "c1", "name": "Water 1", "icon": "FaBuilding", "isLeaf": true },
+            { "id": "c2", "name": "Water 2", "icon": "FaBuilding", "isLeaf": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "insurance",
+      "name": "Insurance",
+      "icon": "FaShieldAlt",
+      "levelName": "Company",
+      "children": [
+        { "id": "c1", "name": "Company 1", "icon": "FaBuilding", "isLeaf": true },
+        { "id": "c2", "name": "Company 2", "icon": "FaBuilding", "isLeaf": true }
+      ]
+    },
+    {
+      "id": "realstate",
+      "name": "Real State",
+      "icon": "FaBuilding",
+      "levelName": "Category",
+      "children": [
+        {
+          "id": "mortgage",
+          "name": "Mensual payment mortage",
+          "icon": "FaMoneyBillWave",
+          "levelName": "Company",
+          "children": [
+            { "id": "c1", "name": "Company 1", "icon": "FaBuilding", "isLeaf": true },
+            { "id": "c2", "name": "Company 2", "icon": "FaBuilding", "isLeaf": true }
+          ]
+        },
+        {
+          "id": "rent",
+          "name": "Rent",
+          "icon": "FaHome",
+          "levelName": "Company",
+          "children": [
+            { "id": "c1", "name": "Company 1", "icon": "FaBuilding", "isLeaf": true },
+            { "id": "c2", "name": "Company 2", "icon": "FaBuilding", "isLeaf": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "taxes",
+      "name": "Taxes",
+      "icon": "FaReceipt",
+      "levelName": "Category",
+      "children": [
+        {
+          "id": "house",
+          "name": "House",
+          "icon": "FaHome",
+          "levelName": "Company",
+          "children": [
+            { "id": "c1", "name": "Company 1", "icon": "FaBuilding", "isLeaf": true },
+            { "id": "c2", "name": "Company 2", "icon": "FaBuilding", "isLeaf": true }
+          ]
+        },
+        {
+          "id": "car",
+          "name": "Car",
+          "icon": "FaCarSide",
+          "levelName": "Company",
+          "children": [
+            { "id": "c1", "name": "Company 1", "icon": "FaBuilding", "isLeaf": true },
+            { "id": "c2", "name": "Company 2", "icon": "FaBuilding", "isLeaf": true }
+          ]
+        }
+      ]
+    }
+  ]
+}
