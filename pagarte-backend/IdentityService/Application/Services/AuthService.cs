@@ -20,7 +20,7 @@ namespace IdentityService.Application.Services
 		private readonly IConfiguration _configuration = confGetEmail;
 		private readonly IJwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
 
-		public Result Register(RegisterUserRequest request)
+		public async Task<Result> RegisterAsync(RegisterUserRequest request)
 		{
 			if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrEmpty(request.Email) || string.IsNullOrWhiteSpace(request.Password))
 			{
@@ -32,7 +32,7 @@ namespace IdentityService.Application.Services
 				return Result.Fail("Url not found to sent the confirmation email");
 			}
 
-			Result validateExistance = IsUsernameAndEmailAvailable(request.Username, request.Email);
+			Result validateExistance = await IsUsernameAndEmailAvailable(request.Username, request.Email);
 
 			if (validateExistance.IsFailed)
 			{
@@ -44,7 +44,7 @@ namespace IdentityService.Application.Services
 
 			var newUser = User.CreateNew(Guid.NewGuid(), request.Username, request.Email, hashedPassword, confirmationToken);
 
-			Result createUserResult = _userRepository.Create(newUser);
+			Result createUserResult = await  _userRepository.CreateAsync(newUser);
 
 			if (createUserResult.IsFailed)
 			{
@@ -64,9 +64,9 @@ namespace IdentityService.Application.Services
 			return Result.Ok().WithSuccess("Registration success. Please chech your email.");
 		}
 
-		private Result IsUsernameAndEmailAvailable(string username, string email)
+		private async Task<Result> IsUsernameAndEmailAvailable(string username, string email)
 		{
-			Result<UserExistenceDto> existenceCheck = _userRepository.CheckExistence(username, email);
+			Result<UserExistenceDto> existenceCheck = await _userRepository.CheckExistenceAsync(username, email);
 
 			if (existenceCheck.IsFailed)
 			{
@@ -90,9 +90,9 @@ namespace IdentityService.Application.Services
 			return Result.Ok();
 		}
 
-		public Result<TokenResponse> Login(LoginRequest userRequest)
+		public async Task<Result<TokenResponse>> LoginAsync(LoginRequest userRequest)
 		{
-			Result<User> userResult = _userRepository.GetUserByUsernameOrEmail(userRequest.UsernameOrEmail);
+			Result<User> userResult = await _userRepository.GetUserByUsernameOrEmailAsync(userRequest.UsernameOrEmail);
 
 			if (userResult.IsFailed)
 			{
@@ -129,9 +129,9 @@ namespace IdentityService.Application.Services
 			return Result.Ok(response);
 		}
 
-		public Result ConfirmEmail(string token)
+		public async Task<Result> ConfirmEmailAsync(string token)
 		{
-			Result<User> userResult = _userRepository.GetUserByToken(token);
+			Result<User> userResult = await _userRepository.GetUserByTokenAsync(token);
 
 			if (userResult.IsFailed)
 			{
@@ -148,7 +148,7 @@ namespace IdentityService.Application.Services
 				return Result.Fail(userConfirmed.Errors);
 			}
 
-			return _userRepository.UpdateEmailConfirmationStatus(user);
+			return await _userRepository.UpdateEmailConfirmationStatusAsync(user);
 		}
 	}
 }

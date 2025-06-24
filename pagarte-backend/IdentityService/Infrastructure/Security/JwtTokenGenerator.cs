@@ -22,7 +22,7 @@ namespace IdentityService.Infrastructure.Security
 			{
 				throw new ArgumentException("User must have a valid ID to generate a token.");
 			}
-			// Create claims based on user information
+			// CreateAsync claims based on user information
 			var claims = new List<Claim>
 			{
 				new(JwtRegisteredClaimNames.Sub, user.Id.ToString()), // "Subject" - a unique identifier

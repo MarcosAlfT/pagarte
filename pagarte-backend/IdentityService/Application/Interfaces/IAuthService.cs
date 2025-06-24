@@ -7,8 +7,8 @@ namespace IdentityService.Application.Interfaces
 {
 	public interface IAuthService
 	{
-		Result Register(RegisterUserRequest user);
-		Result ConfirmEmail(string token);
-		Result<TokenResponse> Login(LoginRequest user);
+		Task<Result> RegisterAsync(RegisterUserRequest user);
+		Task<Result> ConfirmEmailAsync(string token);
+		Task<Result<TokenResponse>> LoginAsync(LoginRequest user);
 	}
 }

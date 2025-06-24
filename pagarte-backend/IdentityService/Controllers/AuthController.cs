@@ -15,14 +15,14 @@ namespace IdentityService.Controllers
 		[ProducesResponseType(typeof(ApiResponse<string>), 200)]
 		[ProducesResponseType(204)]
 		[ProducesResponseType(400)]
-		public ActionResult<ApiResponse> Register(RegisterUserRequest newUser)
+		public async Task<ActionResult<ApiResponse>> RegisterAsync(RegisterUserRequest newUser)
 		{
 			if (!ModelState.IsValid)
 			{
 				return BadRequest(ApiResponse<string>.CreateFailure("Input data error"));
 			}
 
-			var registerResponse = _authService.Register(newUser);
+			var registerResponse = await _authService.RegisterAsync(newUser);
 
 			if (registerResponse.IsFailed)
 			{
@@ -36,7 +36,7 @@ namespace IdentityService.Controllers
 		[ProducesResponseType(typeof(ApiResponse), 200)]
 		[ProducesResponseType(204)]
 		[ProducesResponseType(400)]
-		public ActionResult<ApiResponse> ConfirmEmail([FromQuery] string token)
+		public async Task<ActionResult<ApiResponse>> ConfirmEmailAsync([FromQuery] string token)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -47,7 +47,7 @@ namespace IdentityService.Controllers
 				return BadRequest(ApiResponse.CreateFailure("Missing confirmation token."));
 			}
 
-			var confirmResponse = _authService.ConfirmEmail(token);
+			var confirmResponse = await _authService.ConfirmEmailAsync(token);
 
 			if (confirmResponse.IsFailed)
 			{
@@ -61,13 +61,13 @@ namespace IdentityService.Controllers
 		[ProducesResponseType(typeof(ApiResponse<string>), 200)]
 		[ProducesResponseType(204)]
 		[ProducesResponseType(400)]
-		public ActionResult<ApiResponse<string>> Login([FromBody]LoginRequest loginRequest)
+		public async Task<ActionResult<ApiResponse<string>>> LoginAsync([FromBody]LoginRequest loginRequest)
 		{
 			if (!ModelState.IsValid)
 			{
 				return BadRequest(ApiResponse<string>.CreateFailure("Input data error."));
 			}
-			var loginResponse = _authService.Login(loginRequest);
+			var loginResponse = await _authService.LoginAsync(loginRequest);
 
 			if (loginResponse.IsFailed)
 			{

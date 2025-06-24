@@ -21,7 +21,7 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 		/// </summary>
 		/// <param name="user"></param>
 		/// <returns></returns>
-		public Result Create(User user)
+		public async Task<Result> CreateAsync(User user)
 		{
 			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
 
@@ -40,7 +40,7 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 					user.IsActive,
 				};
 
-				db.Execute("CreateUser", parameters, commandType: System.Data.CommandType.StoredProcedure);
+				await db.ExecuteAsync("CreateUser", parameters, commandType: System.Data.CommandType.StoredProcedure);
 
 				return Result.Ok().WithSuccess("User was created successfully");
 			}
@@ -62,7 +62,7 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 		/// <param name="userName"></param>
 		/// <param name="email"></param>
 		/// <returns></returns>
-		public Result<UserExistenceDto> CheckExistence(string userName, string email)
+		public async Task<Result<UserExistenceDto>> CheckExistenceAsync(string userName, string email)
 		{
 			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
 
@@ -74,7 +74,7 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 					Email = email
 				};
 
-				var existenceResult = db.QuerySingle<UserExistenceDto>(
+				var existenceResult = await db.QuerySingleAsync<UserExistenceDto>(
 					"CheckUserExistence",
 					parameters,
 					commandType: CommandType.StoredProcedure);
@@ -97,7 +97,7 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 		/// </summary>
 		/// <param name="token"></param>
 		/// <returns></returns>
-		public Result<User> GetUserByToken(string token)
+		public async Task<Result<User>> GetUserByTokenAsync(string token)
 		{
 			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
 
@@ -105,7 +105,7 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 			{
 				var parameters = new { Token = token };
 
-				User? user = db.QuerySingleOrDefault<User>(
+				User? user = await db.QuerySingleOrDefaultAsync<User>(
 					"GetUserByToken",
 					parameters,
 					commandType: CommandType.StoredProcedure);
@@ -131,14 +131,14 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 			}
 		}
 
-		public Result<User> GetUserByUsernameOrEmail(string usernameOrEmail)
+		public async Task<Result<User>> GetUserByUsernameOrEmailAsync(string usernameOrEmail)
 		{
 			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
 			try
 			{
 				var parameters = new { UsernameOrEmail = usernameOrEmail };
 
-				User? user = db.QuerySingleOrDefault<User>("GetUserByUsernameOrEmail", parameters, commandType: CommandType.StoredProcedure);
+				User? user = await db.QuerySingleOrDefaultAsync<User>("GetUserByUsernameOrEmail", parameters, commandType: CommandType.StoredProcedure);
 				if (user is null)
 				{
 					return Result.Fail("User not found.");
@@ -162,7 +162,7 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 		/// </summary>
 		/// <param name="user"></param>
 		/// <returns></returns>
-		public Result UpdateEmailConfirmationStatus(User user)
+		public async Task<Result> UpdateEmailConfirmationStatusAsync(User user)
 		{
 			// You need a stored procedure for this, let's call it sp_UpdateUser
 			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
@@ -179,7 +179,7 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 					user.EmailConfirmedAt
 			};
 
-				int rowsAffected = db.Execute("UpdateEmailConfirmationStatus", parameters, commandType: CommandType.StoredProcedure);
+				int rowsAffected = await db.ExecuteAsync("UpdateEmailConfirmationStatus", parameters, commandType: CommandType.StoredProcedure);
 
 				// Optional: Check if the update actually affected a row
 				if (rowsAffected == 0)

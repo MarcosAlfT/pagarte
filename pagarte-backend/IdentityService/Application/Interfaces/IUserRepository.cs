@@ -6,19 +6,19 @@ namespace IdentityService.Application.Interfaces
 {
 	public interface IUserRepository
 	{
-		Result Create(User user);
-		Result<UserExistenceDto> CheckExistence(string userName, string email);
-		Result UpdateEmailConfirmationStatus(User user);
-		Result<User> GetUserByToken(string token);
-		Result<User> GetUserByUsernameOrEmail(string userEmailOrUsername);
+		Task<Result> CreateAsync(User user);
+		Task<Result<UserExistenceDto>> CheckExistenceAsync(string userName, string email);
+		Task<Result> UpdateEmailConfirmationStatusAsync(User user);
+		Task<Result<User>> GetUserByTokenAsync(string token);
+		Task<Result<User>> GetUserByUsernameOrEmailAsync(string userEmailOrUsername);
 
 		//Result<User> GetUserById(Guid userId);
 		//Result Update(User user);
 		//Result Delete(Guid userId);
-		//Result<string> Login(LoginRequest user);
-		//Result<User> GetUserByUsernameOrEmail(string email);
+		//Result<string> LoginAsync(LoginRequest user);
+		//Result<User> GetUserByUsernameOrEmailAsync(string email);
 		//Result<User> GetUserByUsername(string username);
-		//Result<User> GetUserByUsernameOrEmail(string email, string username);
+		//Result<User> GetUserByUsernameOrEmailAsync(string email, string username);
 		//Result<User> GetUserByEmailOrUsernameAndPassword(string email, string username, string password);
 		//Result<User> GetUserByEmailAndPassword(string email, string password);
 		//Result<User> GetUserByUsernameAndPassword(string username, string password);

@@ -7,8 +7,8 @@ POST {{IdentityService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
 {
-  "Username": "Marcos003",
-  "email": "marcos003@pag.com",
+  "Username": "Marcos004",
+  "email": "marcos004@pag.com",
   "password": "12345678"
 }
 

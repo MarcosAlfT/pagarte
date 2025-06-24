@@ -1,0 +1,6 @@
+@PagarteAPI_HostAddress = http://localhost:5179
+
+GET {{PagarteAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
