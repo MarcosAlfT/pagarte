@@ -7,6 +7,7 @@ using IdentityService.Infrastructure.Persistence.Repositories;
 using IdentityService.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace IdentityService
@@ -16,10 +17,11 @@ namespace IdentityService
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            var configuration = builder.Configuration;
 
-            // Add services to the container.
+			// Add services to the container.
 
-            builder.Services.AddControllers();
+			builder.Services.AddControllers();
 			builder.Services.AddScoped<IAuthService, AuthService>(); 
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddSharedDataAccess();
@@ -28,27 +30,31 @@ namespace IdentityService
             builder.Services.AddSingleton<IEmailConfirmationTokenGenerator, EmailConfirmationTokenGenerator>();
             builder.Services.AddSharedEmail(host: "smtp.provider.com", port: 587, username: "info@pagarte.com", password: "pass12345");
 
-            builder.Services.AddAuthentication (options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-                .AddJwtBearer(options =>
-				{
-					options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-					{
-						ValidateIssuer = true,
-						ValidateAudience = true,
-						ValidateLifetime = true,
-						ValidateIssuerSigningKey = true,
-						ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-						ValidAudience = builder.Configuration["JwtSettings:Audience"],
-						IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Secret"]))
 
-						//Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-						//System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Secret"]))
-					};
+            builder.Services.AddAuthentication("Bearer").AddJwtBearer();
+
+            builder.Services.AddOpenIddict()
+				.AddCore(options =>
+				{
+					//options.UseEntityFrameworkCore()
+					//	.UseDbContext<IdentityDbContext>();
+					//options.SetDefaultScope("api");
+					//options.SetDefaultAccessTokenLifetime(TimeSpan.FromHours(1));
+				})
+				.AddServer(options =>
+				{
+                    options.SetTokenEndpointUris("/connect/token");
+                    options.AllowPasswordFlow().AllowRefreshTokenFlow();
+                    options.AddSigningKey(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"]!)));
+                    options.UseAspNetCore().EnableTokenEndpointPassthrough();
+                    options.SetAccessTokenLifetime(TimeSpan.FromMinutes(10));
+                    options.SetRefreshTokenLifetime(TimeSpan.FromDays(2));
+				}).AddValidation(options =>
+				{
+					options.UseLocalServer();
+					options.UseAspNetCore();
 				});
+
 
 			// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 			builder.Services.AddOpenApi();

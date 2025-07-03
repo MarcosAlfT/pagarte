@@ -1,9 +1,9 @@
 ﻿using Email.Shared;
 using IdentityService.Application.Interfaces;
 using IdentityService.Domain;
-using IdentityService.Dtos.Auth;
 using IdentityService.Infrastructure.Security;
 using FluentResults;
+using IdentityService.Application.Dtos.Auth;
 
 namespace IdentityService.Application.Services
 {

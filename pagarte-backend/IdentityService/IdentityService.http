@@ -1,4 +1,4 @@
-@IdentityService_HostAddress = http://localhost:5143
+@IdentityService_HostAddress = http://localhost:5101
 
 ###
 # Register a new user

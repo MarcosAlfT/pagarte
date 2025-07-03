@@ -1,7 +1,7 @@
-﻿using IdentityService.Dtos.Auth;
-using IdentityService.Application.Interfaces;
+﻿using IdentityService.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Api.Contrats.Shared.Responses;
+using IdentityService.Application.Dtos.Auth;
 
 namespace IdentityService.Controllers
 {

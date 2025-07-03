@@ -1,6 +1,6 @@
 ﻿using IdentityService.Domain;
 using FluentResults;
-using IdentityService.Dtos.Auth;
+using IdentityService.Application.Dtos.Auth;
 
 namespace IdentityService.Application.Interfaces
 {

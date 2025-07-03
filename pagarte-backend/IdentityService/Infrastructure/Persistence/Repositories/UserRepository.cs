@@ -1,9 +1,9 @@
 ﻿using Dapper;
 using DataAccess.Shared;
 using FluentResults;
+using IdentityService.Application.Dtos.Auth;
 using IdentityService.Application.Interfaces;
 using IdentityService.Domain;
-using IdentityService.Dtos.Auth;
 using Microsoft.Data.SqlClient;
 using System.Data;
 

@@ -1,4 +1,4 @@
-﻿namespace IdentityService.Dtos.Auth
+﻿namespace IdentityService.Application.Dtos.Auth
 {
 	public class UserExistenceDto
 	{

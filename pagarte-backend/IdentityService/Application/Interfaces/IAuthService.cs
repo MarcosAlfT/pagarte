@@ -1,6 +1,6 @@
 ﻿using Api.Contrats.Shared.Responses;
-using IdentityService.Dtos.Auth;
 using FluentResults;
+using IdentityService.Application.Dtos.Auth;
 
 
 namespace IdentityService.Application.Interfaces

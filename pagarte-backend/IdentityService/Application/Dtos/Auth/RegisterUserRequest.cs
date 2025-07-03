@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace IdentityService.Dtos.Auth
+namespace IdentityService.Application.Dtos.Auth
 {
 	public class RegisterUserRequest
 	{
