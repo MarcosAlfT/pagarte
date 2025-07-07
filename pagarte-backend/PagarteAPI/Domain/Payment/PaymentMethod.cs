@@ -21,5 +21,7 @@ namespace PagarteAPI.Domain.Payment
 		[Required]
 		public DateTime CreatedAt { get; set; }
 		public DateTime UpdatedAt { get; set; } // The last time the payment method changed to isActive = false
+		public bool IsDeleted { get; set; } = false; // Indicates if the payment method is deleted
+		
 	}
 }

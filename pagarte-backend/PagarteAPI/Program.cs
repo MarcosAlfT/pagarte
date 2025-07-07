@@ -13,27 +13,12 @@ namespace PagarteAPI
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
-            // Add authentication to trust IdentityServer as an authority.
-
-            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-            {
-                options.Authority = builder.Configuration["Jwt:Authority"];
-				options.Audience = builder.Configuration["Jwt:Audience"];
-
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateAudience = true,
-					ValidateIssuer = true,
-					ValidateLifetime = true,
-                };
-
-            });
+			var configuration = builder.Configuration;
 
 			// Add services to the container.
 
-            builder.Services.AddDbContext<PaymentsDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("PaymentsDb")));
+			builder.Services.AddDbContext<PaymentsDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("PaymentsDb")));
 			
             // Register repositories and services
 
@@ -42,7 +27,55 @@ namespace PagarteAPI
             builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
 			builder.Services.AddScoped<IPaymentService, PaymentService>();
 
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+			// Add authentication to trust IdentityServer as an authority.
+
+			builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+			{
+                var strAuthority = configuration.GetValue<string>("AuthSettings:Authority");
+                var strAudience = configuration.GetValue<string>("AuthSettings:Audience");
+
+				options.Authority = strAuthority;
+                options.Audience = strAudience;
+
+				options.BackchannelHttpHandler = new HttpClientHandler
+				{
+					ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; }
+				};
+
+				options.TokenValidationParameters = new TokenValidationParameters
+				{
+					ValidateAudience = true,
+					ValidateIssuer = true,
+                    ValidateIssuerSigningKey = true,
+                    ClockSkew = TimeSpan.FromMinutes(5)
+				};
+
+				options.Events = new JwtBearerEvents
+				{
+					OnAuthenticationFailed = context =>
+					{
+						Console.WriteLine("---------------------------------------------");
+						Console.WriteLine($"Authentication Failed: {context.Exception.GetType().Name}");
+						Console.WriteLine($"Message: {context.Exception.Message}");
+						if (context.Exception.InnerException != null)
+						{
+							Console.WriteLine($"Inner Exception: {context.Exception.InnerException.GetType().Name}");
+							Console.WriteLine($"Inner Message: {context.Exception.InnerException.Message}");
+						}
+						Console.WriteLine("---------------------------------------------");
+						return Task.CompletedTask;
+					},
+					OnTokenValidated = context =>
+					{
+						Console.WriteLine("Token successfully validated.");
+						return Task.CompletedTask;
+					}
+				};
+			});
+
+			builder.Services.AddAuthorization();
+
+			// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 			builder.Services.AddOpenApi();
 
             var app = builder.Build();
@@ -55,8 +88,8 @@ namespace PagarteAPI
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
-
+            app.UseAuthentication();
+			app.UseAuthorization();
 
             app.MapControllers();
 

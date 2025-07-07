@@ -3,11 +3,8 @@ using PagarteAPI.Domain.Payment;
 
 namespace PagarteAPI.Infrastructure.Persistence
 {
-	public class PaymentsDbContext: DbContext
+	public class PaymentsDbContext(DbContextOptions<PaymentsDbContext> options) : DbContext(options)
 	{
-		public PaymentsDbContext(DbContextOptions<PaymentsDbContext> options) : base(options)
-		{ }
-
 		public DbSet<PaymentMethod> PaymentMethods { get; set; }
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -15,7 +12,8 @@ namespace PagarteAPI.Infrastructure.Persistence
 
 			modelBuilder.Entity<PaymentMethod>(entity =>
 			{
-				entity.HasIndex(pm => new {pm.UserId, pm.Brand, pm.LastFourDigits}).IsUnique();
+				entity.HasKey(pm => pm.Id);
+				entity.HasIndex(pm => new { pm.UserId, pm.Brand,	pm.LastFourDigits }).IsUnique();
 			});
 			
 		}

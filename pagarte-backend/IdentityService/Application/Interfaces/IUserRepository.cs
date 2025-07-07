@@ -6,7 +6,7 @@ namespace IdentityService.Application.Interfaces
 {
 	public interface IUserRepository
 	{
-		Task<Result> CreateAsync(User user);
+		Task<Result> AddUserAsync(User user);
 		Task<Result<UserExistenceDto>> CheckExistenceAsync(string userName, string email);
 		Task<Result> UpdateEmailConfirmationStatusAsync(User user);
 		Task<Result<User>> GetUserByTokenAsync(string token);

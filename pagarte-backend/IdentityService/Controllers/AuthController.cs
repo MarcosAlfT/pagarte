@@ -1,7 +1,12 @@
-﻿using IdentityService.Application.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Api.Contrats.Shared.Responses;
+﻿using Api.Contrats.Shared.Responses;
 using IdentityService.Application.Dtos.Auth;
+using IdentityService.Application.Interfaces;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Abstractions;
+using OpenIddict.Server.AspNetCore;
+using System.Security.Claims;
 
 namespace IdentityService.Controllers
 {
@@ -57,25 +62,45 @@ namespace IdentityService.Controllers
 			return Ok(ApiResponse.CreateSuccess(confirmResponse.Successes.First().Message));
 		}
 
-		[HttpPost("login")]
-		[ProducesResponseType(typeof(ApiResponse<string>), 200)]
-		[ProducesResponseType(204)]
-		[ProducesResponseType(400)]
-		public async Task<ActionResult<ApiResponse<string>>> LoginAsync([FromBody]LoginRequest loginRequest)
+		[HttpPost("~/connect/token")]
+		public async Task<IActionResult> Exchange()
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ApiResponse<string>.CreateFailure("Input data error."));
-			}
-			var loginResponse = await _authService.LoginAsync(loginRequest);
+			var request = HttpContext.GetOpenIddictServerRequest();
 
-			if (loginResponse.IsFailed)
+			if (request == null)
 			{
-				return BadRequest(ApiResponse<string>.CreateFailure(loginResponse.Errors.First().Message));
+				return BadRequest(ApiResponse.CreateFailure("Invalid OpenIddict request."));
 			}
 
-			return Ok(ApiResponse<TokenResponse>.CreateSuccess(loginResponse.Value));
+			// Validate that Username and Password are not null or empty
+			if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
+			{
+				return BadRequest(ApiResponse.CreateFailure("Username cannot be null or empty."));
+			}
 
+			if (!request.IsPasswordGrantType())
+			{
+				// Return error for unsupported grant type...
+				return Forbid(new AuthenticationProperties(/* ... */));
+			}
+
+			// Call the service to do ALL the work.
+			var principalResult = await _authService.AuthenticateAndCreatePrincipalAsync(request.Username, request.Password);
+
+			// Check if the service failed.
+			if (principalResult.IsFailed)
+			{
+				// Return a generic "invalid_grant" error to the client.
+				return Forbid(new AuthenticationProperties(new Dictionary<string, string?>
+				{
+					[OpenIddictServerAspNetCoreConstants.Properties.Error] = "invalid_grant",
+					[OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = principalResult.Errors.First().Message
+				}), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+			}
+
+			// If the service succeeded, pass the ClaimsPrincipal it returned directly to SignIn.
+			// OpenIddict will handle the rest (creating the token, sending the response).
+			return SignIn(principalResult.Value, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 		}
 	}
 }

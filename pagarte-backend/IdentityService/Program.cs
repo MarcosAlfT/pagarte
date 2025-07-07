@@ -1,14 +1,13 @@
-
-using DataAccess.Shared;
 using Email.Shared;
 using IdentityService.Application.Interfaces;
 using IdentityService.Application.Services;
+using IdentityService.Infrastructure.Persistence;
 using IdentityService.Infrastructure.Persistence.Repositories;
 using IdentityService.Infrastructure.Security;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Runtime.CompilerServices;
-using System.Text;
+using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
+using OpenIddict.Server;
+
 
 namespace IdentityService
 {
@@ -24,31 +23,45 @@ namespace IdentityService
 			builder.Services.AddControllers();
 			builder.Services.AddScoped<IAuthService, AuthService>(); 
             builder.Services.AddScoped<IUserRepository, UserRepository>();
-            builder.Services.AddSharedDataAccess();
+            builder.Services.AddDbContext<IdentityDbContext>(options =>
+               options.UseSqlServer(configuration.GetConnectionString("AuthDB")));
+
+            builder.Services.AddDbContext<OpenIddictDbContext>(options =>
+               options.UseSqlServer(configuration.GetConnectionString("AuthDB")));
+
 			builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
-            builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator> ();
             builder.Services.AddSingleton<IEmailConfirmationTokenGenerator, EmailConfirmationTokenGenerator>();
             builder.Services.AddSharedEmail(host: "smtp.provider.com", port: 587, username: "info@pagarte.com", password: "pass12345");
 
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = "Bearer";
+                options.DefaultChallengeScheme = "Bearer";
+            }).AddJwtBearer();
 
-            builder.Services.AddAuthentication("Bearer").AddJwtBearer();
-
-            builder.Services.AddOpenIddict()
+			builder.Services.AddOpenIddict()
 				.AddCore(options =>
 				{
-					//options.UseEntityFrameworkCore()
-					//	.UseDbContext<IdentityDbContext>();
-					//options.SetDefaultScope("api");
-					//options.SetDefaultAccessTokenLifetime(TimeSpan.FromHours(1));
+					options.UseEntityFrameworkCore()
+                        .UseDbContext<OpenIddictDbContext>();
 				})
 				.AddServer(options =>
 				{
-                    options.SetTokenEndpointUris("/connect/token");
+					var lifetime = configuration.GetValue<double>("AuthSettings:AccessTokenLifetimeMinutes");
+					var strAudience = configuration.GetValue<string>("AuthSettings:Audience") ?? string.Empty;
+
+					options.SetTokenEndpointUris("/connect/token");
                     options.AllowPasswordFlow().AllowRefreshTokenFlow();
-                    options.AddSigningKey(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"]!)));
-                    options.UseAspNetCore().EnableTokenEndpointPassthrough();
-                    options.SetAccessTokenLifetime(TimeSpan.FromMinutes(10));
-                    options.SetRefreshTokenLifetime(TimeSpan.FromDays(2));
+                    options.AcceptAnonymousClients();
+
+					options.AddDevelopmentEncryptionCertificate();
+					options.AddDevelopmentSigningCertificate();
+					options.DisableAccessTokenEncryption();
+
+					options.UseAspNetCore().EnableTokenEndpointPassthrough();
+					options.SetAccessTokenLifetime(TimeSpan.FromMinutes(lifetime));
+					options.SetRefreshTokenLifetime(TimeSpan.FromDays(2));
+
 				}).AddValidation(options =>
 				{
 					options.UseLocalServer();

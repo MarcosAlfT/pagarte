@@ -1,6 +1,7 @@
 ﻿using Api.Contrats.Shared.Responses;
 using FluentResults;
 using IdentityService.Application.Dtos.Auth;
+using System.Security.Claims;
 
 
 namespace IdentityService.Application.Interfaces
@@ -9,6 +10,6 @@ namespace IdentityService.Application.Interfaces
 	{
 		Task<Result> RegisterAsync(RegisterUserRequest user);
 		Task<Result> ConfirmEmailAsync(string token);
-		Task<Result<TokenResponse>> LoginAsync(LoginRequest user);
+		Task<Result<ClaimsPrincipal>> AuthenticateAndCreatePrincipalAsync(string user, string password);
 	}
 }

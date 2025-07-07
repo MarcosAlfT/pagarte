@@ -1,24 +1,27 @@
 ﻿using Email.Shared;
+using FluentResults;
+using IdentityService.Application.Dtos.Auth;
 using IdentityService.Application.Interfaces;
 using IdentityService.Domain;
 using IdentityService.Infrastructure.Security;
-using FluentResults;
-using IdentityService.Application.Dtos.Auth;
+using Microsoft.Extensions.Configuration;
+using OpenIddict.Abstractions;
+using OpenIddict.Server.AspNetCore;
+using System.Security.Claims;
 
 namespace IdentityService.Application.Services
 {
 	public class AuthService(IUserRepository userRepository, IPasswordHasher passwordHasher,
 		IEmailConfirmationTokenGenerator emailConfirmationTokenGenerator,
-		IJwtTokenGenerator jwtTokenGenerator,
 		//IEmailSender emailSender,
-		IConfiguration confGetEmail) : IAuthService
+		IConfiguration _configuration) : IAuthService
 	{
 		private readonly IUserRepository _userRepository = userRepository;
 		private readonly IPasswordHasher _passwordHasher = passwordHasher;
 		private readonly IEmailConfirmationTokenGenerator _emailTokenGenerator = emailConfirmationTokenGenerator;
 		//private readonly IEmailSender _emailSender = emailSender;
-		private readonly IConfiguration _configuration = confGetEmail;
-		private readonly IJwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
+		private readonly IConfiguration _configuration = _configuration;
+
 
 		public async Task<Result> RegisterAsync(RegisterUserRequest request)
 		{
@@ -44,7 +47,7 @@ namespace IdentityService.Application.Services
 
 			var newUser = User.CreateNew(Guid.NewGuid(), request.Username, request.Email, hashedPassword, confirmationToken);
 
-			Result createUserResult = await  _userRepository.CreateAsync(newUser);
+			Result createUserResult = await  _userRepository.AddUserAsync(newUser);
 
 			if (createUserResult.IsFailed)
 			{
@@ -70,7 +73,7 @@ namespace IdentityService.Application.Services
 
 			if (existenceCheck.IsFailed)
 			{
-				return Result.Fail(existenceCheck.Errors);
+				return existenceCheck.ToResult();
 			}
 
 			var validationDto = existenceCheck.Value;
@@ -90,53 +93,13 @@ namespace IdentityService.Application.Services
 			return Result.Ok();
 		}
 
-		public async Task<Result<TokenResponse>> LoginAsync(LoginRequest userRequest)
-		{
-			Result<User> userResult = await _userRepository.GetUserByUsernameOrEmailAsync(userRequest.UsernameOrEmail);
-
-			if (userResult.IsFailed)
-			{
-				return Result.Fail(userResult.Errors);
-			}
-
-			User user = userResult.Value;
-
-			if (user is null || string.IsNullOrEmpty(user.PasswordHash) || !_passwordHasher.Verify(userRequest.Password, user.PasswordHash))
-			{
-				return Result.Fail("Invalid email or password.");
-			}
-
-			if (!user.IsEmailConfirmed)
-			{
-				return Result.Fail("Email not confirmed. Please check your email for confirmation link.");
-			}
-
-			if (!user.IsActive)
-			{
-				return Result.Fail("User is not active. Please contact support.");
-			}
-
-			// Generate JWT token
-			Result<string> tokenResult = _jwtTokenGenerator.GenerateToken(user);
-
-			if (tokenResult.IsFailed)
-			{
-				return Result.Fail(tokenResult.Errors);
-			}
-
-			var response = new TokenResponse { AccessToken = tokenResult.Value };
-
-			return Result.Ok(response);
-		}
-
 		public async Task<Result> ConfirmEmailAsync(string token)
 		{
 			Result<User> userResult = await _userRepository.GetUserByTokenAsync(token);
 
 			if (userResult.IsFailed)
 			{
-				// Pass the failure reason up directly.
-				return userResult.ToResult(); // .ToResult() converts Result<User> to Result
+				return userResult.ToResult(); 
 			}
 
 			User user = userResult.Value;
@@ -145,10 +108,87 @@ namespace IdentityService.Application.Services
 
 			if (userConfirmed.IsFailed)
 			{
-				return Result.Fail(userConfirmed.Errors);
+				return userConfirmed;
 			}
 
-			return await _userRepository.UpdateEmailConfirmationStatusAsync(user);
+			var result = await _userRepository.UpdateEmailConfirmationStatusAsync(user);
+
+			return result;
+
+		}
+
+		public async Task<Result<ClaimsPrincipal>> AuthenticateAndCreatePrincipalAsync(string username, string password)
+		{
+			Result<User> userResult = await _userRepository.GetUserByUsernameOrEmailAsync(username);
+
+			if (userResult.IsFailed)
+			{
+				return userResult.ToResult<ClaimsPrincipal>();
+			}
+
+			User user = userResult.Value;
+
+			if (user is null || string.IsNullOrEmpty(user.PasswordHash) || !_passwordHasher.Verify(password, user.PasswordHash))
+			{
+				return Result.Fail<ClaimsPrincipal>("Invalid username or password.");
+			}
+
+			if (!user.IsEmailConfirmed)
+			{
+				return Result.Fail<ClaimsPrincipal>("Email not confirmed. Please check your email for the confirmation link.");
+			}
+
+			if (!user.IsActive)
+			{
+				return Result.Fail<ClaimsPrincipal>("User is not active. Please contact support.");
+			}
+
+			var strAudience = _configuration.GetValue<string>("AuthSettings:Audience") ?? string.Empty;
+
+			if (string.IsNullOrEmpty(strAudience))
+			{
+				return Result.Fail<ClaimsPrincipal>("Audience not configured.");
+			}
+
+			var claims = new List<Claim>
+			{
+				new (OpenIddictConstants.Claims.Subject, user.Id.ToString()),
+				new (OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
+                new (OpenIddictConstants.Claims.Name, user.Username ?? string.Empty),
+				new (OpenIddictConstants.Claims.Audience, strAudience),
+			};
+
+			var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+			var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+			claimsPrincipal.SetAudiences(strAudience);
+
+			//claimsPrincipal.SetScopes("api");
+			claimsPrincipal.SetScopes(OpenIddictConstants.Scopes.OfflineAccess, OpenIddictConstants.Scopes.Profile, "api");
+
+			claimsPrincipal.SetResources(strAudience);
+
+
+			claimsPrincipal.SetDestinations(static claim => claim.Type switch
+			{
+				OpenIddictConstants.Claims.Audience => new[] { OpenIddictConstants.Destinations.AccessToken },
+				OpenIddictConstants.Claims.Subject => new[] { OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken },
+				OpenIddictConstants.Claims.Email => new[] { OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken },
+				OpenIddictConstants.Claims.Name => new[] { OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken },
+				OpenIddictConstants.Claims.Scope => new[] { OpenIddictConstants.Destinations.AccessToken },
+
+				// Add any other custom claims you might have and their desired destinations.
+				// For example, if you add a "role" claim:
+				// "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+				//     => new[] { OpenIddictConstants.Destinations.AccessToken },
+
+				_ => new string[0] // Default: Do not include other claims unless explicitly specified
+								   // Or, if you want all claims in access token by default:
+								   // _ => new[] { OpenIddictConstants.Destinations.AccessToken }
+			});
+
+			// Return the completed ClaimsPrincipal object, wrapped in a success Result.
+			return Result.Ok(claimsPrincipal);
 		}
 	}
 }

@@ -14,7 +14,7 @@ namespace PagarteAPI.Application.Services
 			_paymentMethodRepository = paymentMethodRepository;
 		}
 
-		public async Task<Result> AddPaymentMethodAsync(CreatePaymentMethodRequest request, Guid  userId)
+		public async Task<Result> CreatePaymentMethodAsync(CreatePaymentMethodRequest request, Guid  userId)
 		{
 
 			var creditCard = new CreditCard
@@ -53,7 +53,7 @@ namespace PagarteAPI.Application.Services
 				UpdatedAt = DateTime.UtcNow
 			};
 
-			var result = await _paymentMethodRepository.AddAsync(paymentMethod);
+			var result = await _paymentMethodRepository.AddPaymentMethodAsync(paymentMethod);
 
 			if (result.IsFailed)
 			{
@@ -66,9 +66,9 @@ namespace PagarteAPI.Application.Services
 
 		public async Task<Result<IEnumerable<PaymentMethodDto>>> GetPaymentMethodsByUserIdAsync(Guid userId)
 		{
-			var result = await _paymentMethodRepository.AddAsync(paymentMethod);
+			var paymentMethodsResult = await _paymentMethodRepository.GetPaymentMethodsByUserIdAsync(userId);
 
-			if (result.IsFailed)
+			if (paymentMethodsResult.IsFailed)
 			{
 				return Result.Fail("pending error define");
 			}

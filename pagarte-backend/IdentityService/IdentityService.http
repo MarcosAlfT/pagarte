@@ -7,8 +7,8 @@ POST {{IdentityService_HostAddress}}/api/auth/register
 Content-Type: application/json
 
 {
-  "Username": "Marcos004",
-  "email": "marcos004@pag.com",
+  "Username": "Marcos",
+  "email": "marcos@pag.com",
   "password": "12345678"
 }
 
@@ -18,32 +18,17 @@ Content-Type: application/json
 POST {{IdentityService_HostAddress}}/api/auth/register 
 Content-Type : application/json
 {
-  "Username": "John Doe",
-  "email": "marcos001@pag.com",
+  "Username": "John",
+  "email": "johnThere@pag.com",
   "password": "12345678"
 }
 
 ###
-# 3. Login with Correct Credentials
-# This endpoint should succeed and return a JWT token.
+### Login using OpenID Connect Password Grant
 
-POST {{IdentityService_HostAddress}}/api/auth/login
-Content-Type: application/json
+POST https://localhost:7111/connect/token
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "UsernameOrEmail": "Marcos",
-  "Password": "12345678"
-}
-
+grant_type=password&username=marcos&password=12345678
 
 ###
-# # 4. Login with Incorrect Password
-# # This endpoint should fail.
-
-# POST {{IdentityService_HostAddress}}/api/auth/login
-# Content-Type: application/json
-
-# {
-#   "email": "test@example.com",
-#   "password": "WrongPassword"
-# }

@@ -10,7 +10,7 @@ namespace PagarteAPI.Infrastructure.Persistence.Repository
 	{
 		private readonly PaymentsDbContext _db = db;
 
-		public async Task<Result> AddAsync(PaymentMethod paymentMethod)
+		public async Task<Result> AddPaymentMethodAsync(PaymentMethod paymentMethod)
 		{
 			try
 			{
@@ -41,9 +41,23 @@ namespace PagarteAPI.Infrastructure.Persistence.Repository
 			}
 		}
 
-		public Task<Result<IEnumerable<PaymentMethod>>> GetPaymentMethodsByUserIdAsync(Guid userId)
+		public async Task<Result<IEnumerable<PaymentMethod>>> GetPaymentMethodsByUserIdAsync(Guid userId)
 		{
-			throw new NotImplementedException();
+			try
+			{
+				var newPaymentMethods = await _db.PaymentMethods
+					.AsNoTracking()
+					.Where(pm => pm.UserId == userId && pm.IsActive == true)
+					.OrderBy(pm => pm.IsDefault)
+					.ThenByDescending(pm => pm.CreatedAt)
+					.ToListAsync();
+
+				return Result.Ok<IEnumerable<PaymentMethod>>(newPaymentMethods);
+			}
+			catch (Exception ex)
+			{
+				return Result.Fail(new Error("Unexpected error occurred.").CausedBy(ex));
+			}
 		}
 	}
 }

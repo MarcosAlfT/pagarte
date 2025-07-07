@@ -3,7 +3,6 @@ using Azure.Core;
 using FluentResults;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PagarteAPI.Application.Dtos.Payments;
 using PagarteAPI.Application.Interfaces;
 using System.Security.Claims;
@@ -17,11 +16,11 @@ namespace PagarteAPI.Controllers
 	{
 		private readonly IPaymentMethodService _paymentService = paymentService;
 
-		[HttpPost("add-paymentmethod")]
+		[HttpPost("create-payment-method")]
 		[ProducesResponseType(typeof(ApiResponse<string>), 200)]
 		[ProducesResponseType(204)]
 		[ProducesResponseType(400)]
-		public async Task<IActionResult> AddPaymentMethodAsync([FromBody] CreatePaymentMethodRequest request)
+		public async Task<IActionResult> CreatePaymentMethodAsync([FromBody] CreatePaymentMethodRequest request)
 		{
 			var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -30,12 +29,12 @@ namespace PagarteAPI.Controllers
 				return Unauthorized(new { Message = "You are not authorized" });
 			}
 
-			var result = await _paymentService.AddPaymentMethodAsync(request, userId);
+			var result = await _paymentService.CreatePaymentMethodAsync(request, userId);
 
 			return Ok(result);
 		}
 
-		[HttpGet("payment-methods")]
+		[HttpGet("get-payment-methods")]
 		[ProducesResponseType(typeof(ApiResponse<string>), 200)]
 		[ProducesResponseType(204)]
 		[ProducesResponseType(400)]

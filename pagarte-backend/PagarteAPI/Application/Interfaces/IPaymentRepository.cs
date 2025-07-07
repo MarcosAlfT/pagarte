@@ -5,8 +5,8 @@ namespace PagarteAPI.Application.Interfaces
 {
 	public interface IPaymentRepository
 	{
-		Task<Result> CreateAsync(Transaction transaction);
-		Task<Result<Transaction>> GetByUserIdAsync(Guid userId);
-		Task<Result> UpdateAsync(Transaction transaction);
+		Task<Result> AddTransactionAsync(Transaction transaction);
+		Task<Result<Transaction>> GetTransactionsByUserIdAsync(Guid userId);
+	
 	}
 }

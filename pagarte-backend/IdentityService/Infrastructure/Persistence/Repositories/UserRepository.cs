@@ -1,58 +1,45 @@
-﻿using Dapper;
-using DataAccess.Shared;
-using FluentResults;
+﻿using FluentResults;
 using IdentityService.Application.Dtos.Auth;
 using IdentityService.Application.Interfaces;
 using IdentityService.Domain;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
 
 namespace IdentityService.Infrastructure.Persistence.Repositories
 {
-	public class UserRepository(IDbConnectionFactory dbConnectionFactory
-		//, ILogger<UserRepository> logger
-		) : IUserRepository
+	public class UserRepository(IdentityDbContext context) : IUserRepository
 	{
-		private readonly IDbConnectionFactory _dbConnectionFactory = dbConnectionFactory;
-		//private readonly ILogger<UserRepository> _logger = logger;
+		private readonly IdentityDbContext _context = context;
 
 		/// <summary>
 		/// Creates a new user in the database.
 		/// </summary>
 		/// <param name="user"></param>
 		/// <returns></returns>
-		public async Task<Result> CreateAsync(User user)
+		public async Task<Result> AddUserAsync(User user)
 		{
-			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
-
 			try
 			{
-				var parameters = new
-				{
-					user.Id,
-					user.Username,
-					user.Email,
-					user.PasswordHash,
-					CreationDate = DateTime.UtcNow,
-					Token = user.ConfirmationToken,
-					SentAt = DateTime.UtcNow,
-					user.IsEmailConfirmed,
-					user.IsActive,
-				};
-
-				await db.ExecuteAsync("CreateUser", parameters, commandType: System.Data.CommandType.StoredProcedure);
+				_context.ChangeTracker.AutoDetectChangesEnabled = false;
+				
+				await _context.Users.AddAsync(user);
+				await _context.SaveChangesAsync();
+				_context.ChangeTracker.AutoDetectChangesEnabled = true;
 
 				return Result.Ok().WithSuccess("User was created successfully");
 			}
-			catch (SqlException sqlEx)
+			catch (DbUpdateException ex)
 			{
-				//_logger.LogError(sqlEx, "SQL error occurred while creating user.");
-				return Result.Fail($"Database error: { sqlEx.Message}");
+				return Result.Fail($"Database error: { ex.Message}");
 			}
 			catch (Exception ex)
 			{
-				//_logger.LogError(ex, "An unexpected error occured while create user with email {user.Email}", user.Email);
 				return Result.Fail($"An unexpected error occured: {ex.Message}");
+			}
+			finally
+			{
+				_context.ChangeTracker.AutoDetectChangesEnabled = true;
 			}
 		}
 
@@ -64,30 +51,23 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 		/// <returns></returns>
 		public async Task<Result<UserExistenceDto>> CheckExistenceAsync(string userName, string email)
 		{
-			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
-
 			try
 			{
-				var parameters = new
-				{
-					Username = userName,
-					Email = email
-				};
+				bool userExists = await _context.Users.AsNoTracking()
+					.AnyAsync(u => u.Username == userName);
+				bool emailExists = await _context.Users.AsNoTracking()
+					.AnyAsync(u => u.Email == email);
 
-				var existenceResult = await db.QuerySingleAsync<UserExistenceDto>(
-					"CheckUserExistence",
-					parameters,
-					commandType: CommandType.StoredProcedure);
+				var existenceResult = new UserExistenceDto
+				{
+					ExistUsername = userExists,
+					ExistEmail = emailExists,
+				};
 
 				return Result.Ok(existenceResult);
 			}
-			catch (SqlException sqlEx) {
-				//_logger.LogError(sqlEx, "SQL error occurred while checking user existence.");
-				return Result.Fail<UserExistenceDto>($"Database error: {sqlEx.Message}");
-			}
 			catch (Exception ex)
 			{
-				//_logger.LogError(ex, "An unexpected error occurred while checking user existence.");
 				return Result.Fail<UserExistenceDto>($"An unexpected error occurred: {ex.Message}");
 			}
 		}
@@ -99,60 +79,38 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 		/// <returns></returns>
 		public async Task<Result<User>> GetUserByTokenAsync(string token)
 		{
-			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
-
 			try
 			{
-				var parameters = new { Token = token };
+				var user = await _context.Users
+					.AsNoTracking()
+					.FirstOrDefaultAsync(u => u.ConfirmationToken == token);
 
-				User? user = await db.QuerySingleOrDefaultAsync<User>(
-					"GetUserByToken",
-					parameters,
-					commandType: CommandType.StoredProcedure);
+				if (user == null)
+					return Result.Fail<User>($"User with token '{token}' not found.");
 
-				// If Dapper returns null, we convert it to a specific failure result.
-				if (user is null)
-				{
-					return Result.Fail("Token was not found.");
-				}
-
-				// Otherwise, we wrap the found user in a success result.
 				return Result.Ok(user);
-			}
-			catch (SqlException ex)
-			{
-				//_logger.LogError(ex, "Database error while getting user by token.");
-				return Result.Fail(ex.Message);
 			}
 			catch (Exception ex)
 			{
-				//_logger.LogError(ex, "An unexpected error occurred while getting user by token.");
 				return Result.Fail(ex.Message);
 			}
 		}
 
 		public async Task<Result<User>> GetUserByUsernameOrEmailAsync(string usernameOrEmail)
 		{
-			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
 			try
 			{
-				var parameters = new { UsernameOrEmail = usernameOrEmail };
+				var user = await _context.Users
+					.AsNoTracking()
+					.FirstOrDefaultAsync(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail);
 
-				User? user = await db.QuerySingleOrDefaultAsync<User>("GetUserByUsernameOrEmail", parameters, commandType: CommandType.StoredProcedure);
-				if (user is null)
-				{
-					return Result.Fail("User not found.");
-				}
+				if (user == null)
+					return Result.Fail<User>($"User with username or email '{usernameOrEmail}' not found.");
+
 				return Result.Ok(user);
-			}
-			catch (SqlException ex)
-			{
-				//_logger.LogError(ex, "Database error while getting user by email.");
-				return Result.Fail(ex.Message);
 			}
 			catch (Exception ex)
 			{
-				//_logger.LogError(ex, "An unexpected error occurred while getting user by email.");
 				return Result.Fail(ex.Message);
 			}
 		}
@@ -164,24 +122,19 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 		/// <returns></returns>
 		public async Task<Result> UpdateEmailConfirmationStatusAsync(User user)
 		{
-			// You need a stored procedure for this, let's call it sp_UpdateUser
-			using IDbConnection db = _dbConnectionFactory.CreateConnection("AuthDb");
-
 			try
 			{
-				var parameters = new
-				{
-					user.Id,
-					user.IsEmailConfirmed,
-					user.IsActive,
-					user.ConfirmationToken, // To clear the token after use
-					user.UpdateDate,
-					user.EmailConfirmedAt
-			};
+				int rowsAffected = await _context.Users
+					.AsNoTracking()
+					.Where(u => u.Id == user.Id)
+					.ExecuteUpdateAsync(updates => updates
+						.SetProperty(u => u.IsEmailConfirmed, user.IsEmailConfirmed)
+						.SetProperty(u => u.ConfirmationToken, (string?)null)
+						.SetProperty(u => u.IsActive, user.IsActive)
+						.SetProperty(u => u.EmailConfirmedAt, user.EmailConfirmedAt)
+						.SetProperty(u => u.UpdateDate, user.UpdateDate)
+						);
 
-				int rowsAffected = await db.ExecuteAsync("UpdateEmailConfirmationStatus", parameters, commandType: CommandType.StoredProcedure);
-
-				// Optional: Check if the update actually affected a row
 				if (rowsAffected == 0)
 				{
 					return Result.Fail("User could not be found to update.");
@@ -192,7 +145,6 @@ namespace IdentityService.Infrastructure.Persistence.Repositories
 			}
 			catch (SqlException ex)
 			{
-				//_logger.LogError(ex, "Database error while updating user {UserId}", user.Id);
 				return Result.Fail(ex.Message);
 			}
 		}
