@@ -1,4 +1,4 @@
-﻿namespace Api.Contrats.Shared.Responses
+﻿namespace PagarteAPI.Application.Dtos.ApiResponse
 {
 	/// <summary>
 	/// The base for all API responses, indicating success and a message.

@@ -1,4 +1,4 @@
-﻿namespace Api.Contrats.Shared.Responses
+﻿namespace PagarteAPI.Application.Dtos.ApiResponse
 {
 	/// <summary>
 	/// Represents a standard API response envelope with a data payload.

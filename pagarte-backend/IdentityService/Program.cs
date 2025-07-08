@@ -1,13 +1,10 @@
-using Email.Shared;
 using IdentityService.Application.Interfaces;
 using IdentityService.Application.Services;
 using IdentityService.Infrastructure.Persistence;
 using IdentityService.Infrastructure.Persistence.Repositories;
 using IdentityService.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
-using OpenIddict.Abstractions;
-using OpenIddict.Server;
-
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 namespace IdentityService
 {
@@ -31,7 +28,7 @@ namespace IdentityService
 
 			builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
             builder.Services.AddSingleton<IEmailConfirmationTokenGenerator, EmailConfirmationTokenGenerator>();
-            builder.Services.AddSharedEmail(host: "smtp.provider.com", port: 587, username: "info@pagarte.com", password: "pass12345");
+            //builder.Services.AddSharedEmail(host: "smtp.provider.com", port: 587, username: "info@pagarte.com", password: "pass12345");
 
             builder.Services.AddAuthentication(options =>
             {
@@ -70,18 +67,60 @@ namespace IdentityService
 
 
 			// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-			builder.Services.AddOpenApi();
+			//builder.Services.AddOpenApi();
 
-            var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.MapOpenApi();
-            }
+			builder.Services.AddEndpointsApiExplorer();
+			builder.Services.AddSwaggerGen(options =>
+			{
+				options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+				{
+					Name = "Authorization",
+					Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+					Scheme = "Bearer",
+					BearerFormat = "JWT",
+					In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+					Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer 12345abcdef\"",
+				});
 
-            app.UseHttpsRedirection();
-            app.UseAuthentication();
+				options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+				{
+					{
+						new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+						{
+							Reference = new Microsoft.OpenApi.Models.OpenApiReference
+							{
+								Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+								Id = "Bearer"
+							}
+						},
+						Array.Empty<string>()
+					}
+				});
+			});
+
+			var app = builder.Build();
+
+			// Configure the HTTP request pipeline.
+			//if (app.Environment.IsDevelopment())
+			//{
+			//    app.MapOpenApi();
+			//}
+
+			if (app.Environment.IsDevelopment())
+			{
+				app.UseSwagger(); // Serves the OpenAPI JSON document at /swagger/v1/swagger.json
+				app.UseSwaggerUI(options =>
+				{
+					options.SwaggerEndpoint("/swagger/v1/swagger.json", "IdentityService API V1");
+					options.RoutePrefix = "swagger"; 
+					options.DocExpansion(DocExpansion.None); 
+				});
+			}
+
+			app.UseHttpsRedirection();
+			app.UseRouting();
+			app.UseAuthentication();
 			app.UseAuthorization();
 
 			app.MapControllers();

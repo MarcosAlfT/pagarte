@@ -1,4 +1,4 @@
-﻿namespace Api.Contrats.Shared.Responses
+﻿namespace IdentityService.Application.Dtos.Response
 {
 	/// <summary>
 	/// The base for all API responses, indicating success and a message.

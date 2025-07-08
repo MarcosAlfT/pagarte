@@ -1,4 +1,4 @@
-﻿using Api.Contrats.Shared.Responses;
+﻿using PagarteAPI.Application.Dtos.ApiResponse;
 using Azure.Core;
 using FluentResults;
 using Microsoft.AspNetCore.Authorization;

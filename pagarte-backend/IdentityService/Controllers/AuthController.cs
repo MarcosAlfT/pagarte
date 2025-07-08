@@ -1,4 +1,4 @@
-﻿using Api.Contrats.Shared.Responses;
+﻿using IdentityService.Application.Dtos.Response;
 using IdentityService.Application.Dtos.Auth;
 using IdentityService.Application.Interfaces;
 using Microsoft.AspNetCore;

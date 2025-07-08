@@ -1,4 +1,4 @@
-﻿using Api.Contrats.Shared.Responses;
+﻿using IdentityService.Application.Dtos.Response;
 using FluentResults;
 using IdentityService.Application.Dtos.Auth;
 using System.Security.Claims;

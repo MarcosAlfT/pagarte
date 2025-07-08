@@ -1,10 +1,8 @@
-﻿using Email.Shared;
-using FluentResults;
+﻿using FluentResults;
 using IdentityService.Application.Dtos.Auth;
 using IdentityService.Application.Interfaces;
 using IdentityService.Domain;
 using IdentityService.Infrastructure.Security;
-using Microsoft.Extensions.Configuration;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using System.Security.Claims;
@@ -171,20 +169,13 @@ namespace IdentityService.Application.Services
 
 			claimsPrincipal.SetDestinations(static claim => claim.Type switch
 			{
-				OpenIddictConstants.Claims.Audience => new[] { OpenIddictConstants.Destinations.AccessToken },
-				OpenIddictConstants.Claims.Subject => new[] { OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken },
-				OpenIddictConstants.Claims.Email => new[] { OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken },
-				OpenIddictConstants.Claims.Name => new[] { OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken },
-				OpenIddictConstants.Claims.Scope => new[] { OpenIddictConstants.Destinations.AccessToken },
+				OpenIddictConstants.Claims.Audience => [OpenIddictConstants.Destinations.AccessToken],
+				OpenIddictConstants.Claims.Subject => [OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken],
+				OpenIddictConstants.Claims.Email => [OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken],
+				OpenIddictConstants.Claims.Name => [OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken],
+				OpenIddictConstants.Claims.Scope => [OpenIddictConstants.Destinations.AccessToken],
 
-				// Add any other custom claims you might have and their desired destinations.
-				// For example, if you add a "role" claim:
-				// "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-				//     => new[] { OpenIddictConstants.Destinations.AccessToken },
-
-				_ => new string[0] // Default: Do not include other claims unless explicitly specified
-								   // Or, if you want all claims in access token by default:
-								   // _ => new[] { OpenIddictConstants.Destinations.AccessToken }
+				_ => Array.Empty<string>()
 			});
 
 			// Return the completed ClaimsPrincipal object, wrapped in a success Result.

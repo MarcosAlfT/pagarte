@@ -1,4 +1,4 @@
-﻿//using Api.Contrats.Shared.Responses;
+﻿//using Api.Contrats.Shared.Response;
 //using IdentityService.Dtos.Auth;
 //using Microsoft.AspNetCore.Authorization;
 //using Microsoft.AspNetCore.Identity;
