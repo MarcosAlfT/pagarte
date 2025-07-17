@@ -7,5 +7,6 @@ namespace PagarteAPI.Application.Interfaces
 	{
 		Task<Result> CreatePaymentMethodAsync(CreatePaymentMethodRequest request, Guid userId);
 		Task<Result<IEnumerable<PaymentMethodDto>>> GetPaymentMethodsByUserIdAsync(Guid userId);
+		Task<Result> DeletePaymentMethodAsync(Guid paymentMethodId, Guid UserId);
 	}
 }

@@ -1,4 +1,4 @@
-﻿namespace IdentityService.Application.Dtos.Response
+﻿namespace IdentityService.Application.Dtos.ApiResponse
 {
 	/// <summary>
 	/// Represents a standard API response envelope with a data payload.

@@ -2,7 +2,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using PagarteAPI.Application.Interfaces;
-using PagarteAPI.Domain.Payment;
+using PagarteAPI.Domain.Payments;
 using System.Data;
 
 namespace PagarteAPI.Infrastructure.Persistence.Repository

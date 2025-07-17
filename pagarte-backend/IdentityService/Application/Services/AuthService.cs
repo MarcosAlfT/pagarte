@@ -115,7 +115,7 @@ namespace IdentityService.Application.Services
 
 		}
 
-		public async Task<Result<ClaimsPrincipal>> AuthenticateAndCreatePrincipalAsync(string username, string password)
+		public async Task<Result<ClaimsPrincipal>> AuthenticateUserAndBuildPrincipalAsync(string username, string password)
 		{
 			Result<User> userResult = await _userRepository.GetUserByUsernameOrEmailAsync(username);
 

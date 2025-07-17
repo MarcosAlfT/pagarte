@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PagarteAPI.Domain.Payment;
+using PagarteAPI.Domain.Payments;
 
 namespace PagarteAPI.Infrastructure.Persistence
 {
@@ -13,7 +13,7 @@ namespace PagarteAPI.Infrastructure.Persistence
 			modelBuilder.Entity<PaymentMethod>(entity =>
 			{
 				entity.HasKey(pm => pm.Id);
-				entity.HasIndex(pm => new { pm.UserId, pm.Brand,	pm.LastFourDigits }).IsUnique();
+				entity.HasIndex(pm => new { pm.ProviderToken }).IsUnique();
 			});
 			
 		}

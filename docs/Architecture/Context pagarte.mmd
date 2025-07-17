@@ -1,0 +1,38 @@
+C4Context
+    title "Pagarte Context Diagram"
+    Enterprise_Boundary(b0, "Application Boundary") {
+        Person_Ext(clientB, "Client B", "Potential client without a pagarte account")
+        Person(clientA, "Client A", "Client with a pagarte account.")
+
+        System(SystemAA, "Mobile Application", "Allows customers to make payments.")
+
+        Enterprise_Boundary(b1, "PagarteBoundary") {
+
+            System_Boundary(b2, "API Boundary") {
+                System(identity, "Identity Service", "Pagarte Identity API to create accounts and authorize other API OAuth2.0")
+                System(payments, "Payments", "Create payment methods and iniciate a payment transaction.")
+            }
+
+            SystemDb_Ext(SystemE, "Mainframe Banking System", "Stores all of the core banking information about customers, accounts, transactions, etc.")
+
+            System_Ext(SystemC, "E-mail system", "The internal Microsoft Exchange e-mail system.")
+            SystemDb(SystemD, "Banking System D Database", "A system of the bank, with personal bank accounts.")
+
+            Boundary(b3, "BankBoundary3", "boundary") {
+                SystemQueue(SystemF, "Banking System F Queue", "A system of the bank.")
+                SystemQueue_Ext(SystemG, "Banking System G Queue", "A system of the bank, with personal bank accounts.")
+            }
+        }
+         Enterprise_Boundary(Dlocal, "DLocal third party company") {
+
+            System_Boundary(b2, "API Boundary") {
+                System(DlocalAuth, "Authorization", "Authorization to create payment method or make a trx")
+                System(trx, "Transaction", "Making credit card transaction.")
+            }
+        }
+    }
+
+    BiRel(clientA, identity, "Uses")
+    BiRel(identity, SystemE, "Uses")
+    Rel(identity, SystemC, "Sends e-mails", "SMTP")
+    Rel(SystemC, clientA, "Sends e-mails to")

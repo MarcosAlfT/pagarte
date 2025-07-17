@@ -1,30 +1,44 @@
 ﻿using FluentResults;
 using PagarteAPI.Application.Dtos.Payments;
 using PagarteAPI.Application.Interfaces;
-using PagarteAPI.Domain.Payment;
+using PagarteAPI.Domain.Payments;
+using PagarteAPI.Infrastructure.Persistence.Repository;
 
 namespace PagarteAPI.Application.Services
 {
-	public class PaymentMethodService : IPaymentMethodService
+	public class PaymentMethodService(IPaymentMethodRepository paymentMethodRepository) : IPaymentMethodService
 	{
-		private readonly IPaymentMethodRepository _paymentMethodRepository;
-
-		public PaymentMethodService(IPaymentMethodRepository paymentMethodRepository)
-		{
-			_paymentMethodRepository = paymentMethodRepository;
-		}
+		private readonly IPaymentMethodRepository _paymentMethodRepository = paymentMethodRepository;
 
 		public async Task<Result> CreatePaymentMethodAsync(CreatePaymentMethodRequest request, Guid  userId)
 		{
-
+			bool isDefault = false;
 			var creditCard = new CreditCard
 			{
 				CardNumber = request.CardNumber,
 				CardHolderName = request.CardHolderName,
-				ExpirationDate = request.ExpirationDate,
+				ExpirationMonth = request.ExpirationMonth,
+				ExpirationYear = request.ExpirationYear,
 				Cvv = request.Cvv,
 				Brand = request.Brand,
 			};
+
+			var hasAtLeastOneActivePaymentMethod = await _paymentMethodRepository.HasUserPaymentMethod(userId);
+
+			if (!hasAtLeastOneActivePaymentMethod)
+			{
+				isDefault = true;
+			}
+			else
+			{
+				var available = await _paymentMethodRepository.CheckCardAvailabilityForCreationAsync(userId,
+					creditCard.Brand, creditCard.LastFourDigits);
+
+				if (available.IsFailed)
+				{
+					return available;
+				}
+			}
 
 			//Here developing the logic to call DLocal to create the payment method
 
@@ -36,32 +50,50 @@ namespace PagarteAPI.Application.Services
 			{
 				return Result.Fail("Failed to create payment method with dLocal.");
 			}
-			
-			var cardToken = "simulation-of-dlocal-card-token"; // Simulated token from dLocal
+
+			var cardToken = Guid.NewGuid().ToString(); // Simulated token from dLocal
 
 			// Save the payment method in the repository`
-			var paymentMethod = new PaymentMethod
-			{
-				Id = Guid.NewGuid(),
-				UserId = request.UserId,
-				Brand = request.Brand,
-				ProviderToken = cardToken, // This is the token from dLocal
-				LastFourDigits = creditCard.LastFourDigits,
-				IsActive = true, // Assuming the payment method is active upon creation
-				IsDefault = request.IsDefault,
-				CreatedAt = DateTime.UtcNow,
-				UpdatedAt = DateTime.UtcNow
-			};
 
-			var result = await _paymentMethodRepository.AddPaymentMethodAsync(paymentMethod);
+			var newPaymentMethod = PaymentMethod.CreatePaymentMethod(userId,
+				cardToken, request.Brand, creditCard.LastFourDigits, isDefault);
 
-			if (result.IsFailed)
+			var addResult = await _paymentMethodRepository.AddPaymentMethodAsync(newPaymentMethod);
+
+			if (addResult.IsFailed)
 			{
-				return Result.Fail("pending error define");
+				return addResult;
 			}
 
-
 			return Result.Ok().WithSuccess("Payment method created successfully.");
+		}
+
+		public async Task<Result> DeletePaymentMethodAsync(Guid paymentMethodId, Guid UserId)
+		{
+			var result = await _paymentMethodRepository.GetPaymentMethodByIdAsync(paymentMethodId);
+			
+			if (result.IsFailed)
+			{
+				return result.ToResult();
+			}
+
+			var paymentMethod = result.Value;
+
+			if (paymentMethod == null)
+			{
+				return Result.Fail("Payment method not found.");
+			}
+			if (paymentMethod.UserId != UserId)
+			{
+				return Result.Fail("You are not authorized to delete this payment method.");
+			}
+
+			paymentMethod.SoftDelete();
+
+			var updateResult = await _paymentMethodRepository.UpdatePaymentMethodAsync(paymentMethod);
+
+			return updateResult;
+			
 		}
 
 		public async Task<Result<IEnumerable<PaymentMethodDto>>> GetPaymentMethodsByUserIdAsync(Guid userId)
@@ -73,8 +105,17 @@ namespace PagarteAPI.Application.Services
 				return Result.Fail("pending error define");
 			}
 
+			var paymentMethodsDto = paymentMethodsResult.Value.Select(pm => new PaymentMethodDto
+			{
+				Id = pm.Id,
+				UserId = pm.UserId,
+				Brand = pm.Brand,
+				LastFourDigits = pm.LastFourDigits,
+				IsActive = pm.IsActive,
+				IsDefault = pm.IsDefault,
+			});
 
-			return Result.Ok().WithSuccess("Payment method created successfully.");
+			return Result.Ok(paymentMethodsDto);
 		}
 	}
 }

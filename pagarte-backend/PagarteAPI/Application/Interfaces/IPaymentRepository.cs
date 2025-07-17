@@ -1,4 +1,4 @@
-﻿using PagarteAPI.Domain.Payment;
+﻿using PagarteAPI.Domain.Payments;
 using FluentResults;
 
 namespace PagarteAPI.Application.Interfaces

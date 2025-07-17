@@ -1,9 +1,7 @@
 ﻿using FluentResults;
-using PagarteAPI.Application.Dtos;
 using PagarteAPI.Application.Dtos.Payments;
 using PagarteAPI.Application.Interfaces;
-using PagarteAPI.Domain.Payment;
-using PagarteAPI.Infrastructure.Persistence.Repository;
+using PagarteAPI.Domain.Payments;
 
 namespace PagarteAPI.Application.Services
 {

@@ -1,4 +1,4 @@
-﻿namespace IdentityService.Application.Dtos.Response
+﻿namespace IdentityService.Application.Dtos.ApiResponse
 {
 	/// <summary>
 	/// The base for all API responses, indicating success and a message.

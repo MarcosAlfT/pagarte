@@ -1,4 +1,5 @@
-﻿using IdentityService.Application.Dtos.Response;
+﻿using FluentResults;
+using IdentityService.Application.Dtos.ApiResponse;
 using IdentityService.Application.Dtos.Auth;
 using IdentityService.Application.Interfaces;
 using Microsoft.AspNetCore;
@@ -6,7 +7,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
-using System.Security.Claims;
 
 namespace IdentityService.Controllers
 {
@@ -31,10 +31,10 @@ namespace IdentityService.Controllers
 
 			if (registerResponse.IsFailed)
 			{
-				return BadRequest(ApiResponse.CreateFailure(registerResponse.Errors.First().Message));
+				return BadRequest(ApiResponse.CreateFailure(registerResponse.Errors[0].Message));
 			}
 
-			return Ok(ApiResponse.CreateSuccess(registerResponse.Successes.First().Message));
+			return Ok(ApiResponse.CreateSuccess(registerResponse.Successes[0].Message));
 		}
 
 		[HttpGet("confirm-email")]
@@ -56,10 +56,10 @@ namespace IdentityService.Controllers
 
 			if (confirmResponse.IsFailed)
 			{
-				return BadRequest(ApiResponse.CreateFailure(confirmResponse.Errors.First().Message));
+				return BadRequest(ApiResponse.CreateFailure(confirmResponse.Errors[0].Message));
 			}
 
-			return Ok(ApiResponse.CreateSuccess(confirmResponse.Successes.First().Message));
+			return Ok(ApiResponse.CreateSuccess(confirmResponse.Successes[0].Message));
 		}
 
 		[HttpPost("~/connect/token")]
@@ -78,29 +78,48 @@ namespace IdentityService.Controllers
 				return BadRequest(ApiResponse.CreateFailure("Username cannot be null or empty."));
 			}
 
-			if (!request.IsPasswordGrantType())
+			switch (request.GrantType)
 			{
-				// Return error for unsupported grant type...
-				return Forbid(new AuthenticationProperties(/* ... */));
+				case OpenIddictConstants.GrantTypes.Password:
+
+					var principalResult = await _authService.AuthenticateUserAndBuildPrincipalAsync(request.Username, request.Password);
+
+					if (principalResult.IsFailed)
+						return ReturnForbidInvalidGrant(principalResult.Errors);
+
+					return SignIn(principalResult.Value, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+				case OpenIddictConstants.GrantTypes.RefreshToken:
+					return Ok("Refresh token flow handled."); // Placeholder
+
+				case OpenIddictConstants.GrantTypes.ClientCredentials:
+					return Ok("Client credentials flow handled."); // Placeholder
+
+				// Add other grant types as needed (e.g., AuthorizationCode)
+
+				default:
+					// Handle unsupported grant types
+					return Forbid(
+						authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+						properties: new AuthenticationProperties(new Dictionary<string, string?>
+						{
+							[OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.UnsupportedGrantType,
+							[OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The specified grant type is not supported by this endpoint."
+						}));
 			}
+		}
 
-			// Call the service to do ALL the work.
-			var principalResult = await _authService.AuthenticateAndCreatePrincipalAsync(request.Username, request.Password);
+		private ForbidResult ReturnForbidInvalidGrant(IEnumerable<IError> errors)
+		{
+			string errorDescription = string.Join(" ", errors.Select(e => e.Message));
 
-			// Check if the service failed.
-			if (principalResult.IsFailed)
-			{
-				// Return a generic "invalid_grant" error to the client.
-				return Forbid(new AuthenticationProperties(new Dictionary<string, string?>
-				{
-					[OpenIddictServerAspNetCoreConstants.Properties.Error] = "invalid_grant",
-					[OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = principalResult.Errors.First().Message
-				}), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-			}
-
-			// If the service succeeded, pass the ClaimsPrincipal it returned directly to SignIn.
-			// OpenIddict will handle the rest (creating the token, sending the response).
-			return SignIn(principalResult.Value, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+			return Forbid(
+					authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+					properties: new AuthenticationProperties(new Dictionary<string, string?>
+					{
+						[OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
+						[OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = errorDescription
+				}));
 		}
 	}
 }

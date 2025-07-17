@@ -1,4 +1,4 @@
-﻿namespace PagarteAPI.Domain.Payment
+﻿namespace PagarteAPI.Domain.Payments
 {
 	public class Transaction
 	{
